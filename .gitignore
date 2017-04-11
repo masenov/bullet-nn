@@ -1,0 +1,5 @@
+api.pyc
+logs/*
+.#*
+__pycache__/*
+data.txt
