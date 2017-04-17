@@ -5,3 +5,4 @@ __pycache__/*
 data.txt
 nn_weights/*
 *.pyc
+

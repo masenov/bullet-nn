@@ -63,7 +63,6 @@ with  tf.Session(config=config) as sess:
     w_h4 = init_weights([325, 325], "w_h4")
     w_h5 = init_weights([325, 325], "w_h5")
     w_o = init_weights([325, 6], "w_o")
-
     #Step 4 - Add histogram summaries for weights
     tf.summary.histogram("w_h_summ", w_h)
     tf.summary.histogram("w_h2_summ", w_h2)
@@ -78,7 +77,6 @@ with  tf.Session(config=config) as sess:
 
     #Step 6 - Create Model
     py_x = model(X, w_h, w_h2, w_h3, w_h4, w_h5, w_o, p_keep_input, p_keep_hidden)
-
     #Step 7 Create cost function
     with tf.name_scope("cost"):
         cost = tf.reduce_mean(tf.square(py_x - Y))
@@ -112,7 +110,7 @@ with  tf.Session(config=config) as sess:
     #Step 12 train the  model
     for i in range(1000):
         for start, end in zip(range(0, len(trX), 12800), range(12800, len(trX)+1, 12800)):
-            sess.run(train_op, feed_dict={X: trX[start:end], Y: trY[start:end],
+           sess.run(train_op, feed_dict={X: trX[start:end], Y: trY[start:end],
                                           p_keep_input: 1.0, p_keep_hidden: 1.0})
         summary, train_acc = sess.run([merged, cost], feed_dict={X: trX[0:100000], Y: trY[0:100000],
                                           p_keep_input: 1.0, p_keep_hidden: 1.0})
@@ -126,5 +124,4 @@ with  tf.Session(config=config) as sess:
         np.save('nn_weights/1w_h4_'+str(i),w_h4.eval())
         np.save('nn_weights/1w_h5_'+str(i),w_h5.eval())
         np.save('nn_weights/1w_o_'+str(i),w_o.eval())
-
 
