@@ -15,26 +15,20 @@ def init_weights(shape, name):
     return tf.Variable(tf.random_normal(shape, stddev=0.1), name=name)
 
 # This network is the same as the previous one except with an extra hidden layer + dropout
-def model(X, w_h, w_h2, w_h3, w_h4, w_h5, w_o, p_keep_input, p_keep_hidden):
+def model(X, w_h, w_h2, w_h3, w_o, p_keep_input, p_keep_hidden):
     # Add layer name scopes for better graph visualization
     with tf.name_scope("layer1"):
         X = tf.nn.dropout(X, p_keep_input)
         h = tf.nn.relu(tf.matmul(X, w_h))
     with tf.name_scope("layer2"):
-        h2 = tf.nn.dropout(h, p_keep_hidden)
-        h3 = tf.nn.relu(tf.matmul(h2, w_h2))
+        h = tf.nn.dropout(h, p_keep_hidden)
+        h2 = tf.nn.relu(tf.matmul(h, w_h2))
     with tf.name_scope("layer3"):
-        h4 = tf.nn.dropout(h3, p_keep_hidden)
-        h5 = tf.nn.relu(tf.matmul(h4, w_h3))
+        h = tf.nn.dropout(h, p_keep_hidden)
+        h2 = tf.nn.relu(tf.matmul(h, w_h3))
     with tf.name_scope("layer4"):
-        h6 = tf.nn.dropout(h5, p_keep_hidden)
-        h7 = tf.nn.relu(tf.matmul(h6, w_h4))
-    with tf.name_scope("layer5"):
-        h8 = tf.nn.dropout(h7, p_keep_hidden)
-        h9 = tf.nn.relu(tf.matmul(h8, w_h5))
-    with tf.name_scope("layer6"):
-        h10 = tf.nn.dropout(h9, p_keep_hidden)
-        return tf.matmul(h10, w_o)
+        h2 = tf.nn.dropout(h2, p_keep_hidden)
+        return tf.matmul(h2, w_o)
 
 config=tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -42,34 +36,30 @@ config.gpu_options.allow_growth = True
 with  tf.Session(config=config) as sess:
 
     data = seqData()
-    train_data = data[:9000000,:]
-    test_data = data[9000000:,:]
+    train_data = data[0:90000,:]
+    test_data = data[90000:,:]
 
 
-    trX = train_data[:,:16]
-    trY = train_data[:,16:]
-    teX = test_data[:,:16]
-    teY = test_data[:,16:]
+    trX = train_data[:,:64]
+    trY = train_data[:,64:]
+    teX = test_data[:,:64]
+    teY = test_data[:,64:]
 
     print ("Loaded data")
 
-    X = tf.placeholder(tf.float32, shape=[None, 16])
+    X = tf.placeholder(tf.float32, shape=[None, 64])
     Y = tf.placeholder(tf.float32, shape=[None, 6])
 
     #Step 3 - Initialize weights
-    w_h = init_weights([16, 325], "w_h")
-    w_h2 = init_weights([325, 325], "w_h2")
-    w_h3 = init_weights([325, 325], "w_h3")
-    w_h4 = init_weights([325, 325], "w_h4")
-    w_h5 = init_weights([325, 325], "w_h5")
-    w_o = init_weights([325, 6], "w_o")
+    w_h = init_weights([64, 185], "w_h")
+    w_h2 = init_weights([185, 185], "w_h2")
+    w_h3 = init_weights([185, 185], "w_h3")
+    w_o = init_weights([185, 6], "w_o")
 
     #Step 4 - Add histogram summaries for weights
     tf.summary.histogram("w_h_summ", w_h)
     tf.summary.histogram("w_h2_summ", w_h2)
     tf.summary.histogram("w_h3_summ", w_h3)
-    tf.summary.histogram("w_h4_summ", w_h4)
-    tf.summary.histogram("w_h5_summ", w_h5)
     tf.summary.histogram("w_o_summ", w_o)
 
     #Step 5 - Add dropout to input and hidden layers
@@ -77,7 +67,7 @@ with  tf.Session(config=config) as sess:
     p_keep_hidden = tf.placeholder("float", name="p_keep_hidden")
 
     #Step 6 - Create Model
-    py_x = model(X, w_h, w_h2, w_h3, w_h4, w_h5, w_o, p_keep_input, p_keep_hidden)
+    py_x = model(X, w_h, w_h2, w_h3, w_o, p_keep_input, p_keep_hidden)
 
     #Step 7 Create cost function
     with tf.name_scope("cost"):
@@ -85,7 +75,7 @@ with  tf.Session(config=config) as sess:
         #cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=py_x, labels=Y))
         #train_op = tf.train.RMSPropOptimizer(0.1, 0.9).minimize(cost)
         #train_op = tf.train.GradientDescentOptimizer(0.5).minimize(cost)
-        train_op = tf.train.AdamOptimizer(learning_rate=0.00001).minimize(cost)
+        train_op = tf.train.AdamOptimizer().minimize(cost)
         # Add scalar summary for cost tensor
         tf.summary.scalar("cost", cost)
 
@@ -110,21 +100,19 @@ with  tf.Session(config=config) as sess:
     tf.global_variables_initializer().run()
 
     #Step 12 train the  model
-    for i in range(1000):
-        for start, end in zip(range(0, len(trX), 12800), range(12800, len(trX)+1, 12800)):
+    for i in range(2000):
+        for start, end in zip(range(0, len(trX), 128), range(128, len(trX)+1, 128)):
             sess.run(train_op, feed_dict={X: trX[start:end], Y: trY[start:end],
-                                          p_keep_input: 1.0, p_keep_hidden: 1.0})
-        summary, train_acc = sess.run([merged, cost], feed_dict={X: trX[0:100000], Y: trY[0:100000],
+                                          p_keep_input: 1.0, p_keep_hidden: 0.5})
+        summary, train_acc = sess.run([merged, cost], feed_dict={X: trX, Y: trY,
                                           p_keep_input: 1.0, p_keep_hidden: 1.0})
         summary, test_acc = sess.run([merged, cost], feed_dict={X: teX, Y: teY,
                                           p_keep_input: 1.0, p_keep_hidden: 1.0})
         # writer.add_summary(summary, i)  # Write summary
         print ('%.12f, %.12f' % (train_acc, test_acc))                   # Report the accuracy
-        np.save('nn_weights/1w_h_'+str(i),w_h.eval())
-        np.save('nn_weights/1w_h2_'+str(i),w_h2.eval())
-        np.save('nn_weights/1w_h3_'+str(i),w_h3.eval())
-        np.save('nn_weights/1w_h4_'+str(i),w_h4.eval())
-        np.save('nn_weights/1w_h5_'+str(i),w_h5.eval())
-        np.save('nn_weights/1w_o_'+str(i),w_o.eval())
+    np.save('1w_h',w_h.eval())
+    np.save('1w_h2',w_h2.eval())
+    np.save('1w_h3',w_h3.eval())
+    np.save('1w_o',w_o.eval())
 
 

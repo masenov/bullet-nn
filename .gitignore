@@ -1,0 +1,7 @@
+api.pyc
+logs/*
+.#*
+__pycache__/*
+data.txt
+nn_weights/*
+*.pyc
